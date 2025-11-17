@@ -7,6 +7,7 @@ import pandas as pd
 import scipy.sparse
 from tqdm import tqdm
 from MacSGP.networks import *
+from MacSGP.utils import patches, OptimHelper
 
 class Model():
 
@@ -17,7 +18,7 @@ class Model():
                  alpha_gcn=None,
                  theta_gcn=None,
                  coef_fe=0.1,
-                 coef_reg=0.1,
+                 coef_reg=1.2,
                  training_steps=3000,
                  lr=0.002,
                  seed=1234,
@@ -90,128 +91,97 @@ class Model():
         self.features_loss = list()
         self.regularization_loss = list()
 
-    def train(self, report_loss=True, step_interval=200, test=False, gene_patch=False, patch_size=200, use_amp=False):
-        if gene_patch:
-            n_patchs = int(np.ceil(self.Y.shape[1] / patch_size))
-            scaler = GradScaler()
-
+    def train(
+        self,
+        report_loss: bool = True,
+        step_interval: int = 200,
+        test: bool = False,
+        gene_patch: bool = False,
+        patch_size: int = 200,
+        use_amp: bool = False,
+    ):
         self.net.train()
+        opt = OptimHelper(self.optimizer, use_amp=use_amp)
 
         for step in tqdm(range(self.training_steps)):
             if gene_patch:
-                loss_sum = 0
-                decon_loss = 0
-                regularization_loss = 0
-                self.optimizer.zero_grad()
+                n_patches = int(np.ceil(self.Y.shape[1] / patch_size))
+                opt.zero_grad()
+                loss_sum = 0.0
+                decon_sum = 0.0
+                reg_sum = 0.0
 
-                for i in range(n_patchs):
-                    if i == n_patchs - 1:
-                        start = i * patch_size
-                        end = self.Y.shape[1]
-                    else:
-                        start = i * patch_size
-                        end = (i + 1) * patch_size
-                    if use_amp:
-                        with autocast():
-                            loss = self.net(node_feats=self.X,
-                                            edge_index=self.edge_index,
-                                            count_matrix=self.Y[:, start:end],
-                                            library_size=self.lY,
-                                            basis=self.basis[:, start:end],
-                                            alpha = self.alpha,
-                                            proportion = self.proportion,
-                                            gene_index=torch.arange(start, end).to(self.device),
-                                            loss_mode='DECONV',
-                                            n_patchs=n_patchs,
-                                            test=test
-                                            )
-                    else:
-                        loss = self.net(node_feats=self.X,
-                                        edge_index=self.edge_index,
-                                        count_matrix=self.Y[:, start:end],
-                                        library_size=self.lY,
-                                        basis=self.basis[:, start:end],
-                                        alpha = self.alpha,
-                                        proportion = self.proportion,
-                                        gene_index=torch.arange(start, end).to(self.device),
-                                        loss_mode='DECONV',
-                                        n_patchs=n_patchs,
-                                        test=test
-                                        )
-                    loss_sum += loss.item()
-                    decon_loss += self.net.decon_loss.item()
-                    regularization_loss += self.net.regularization_loss.item()
-                    if use_amp:
-                        scaler.scale(loss).backward()
-                    else:
-                        loss.backward()
+                for start, end in patches(self.Y.shape[1], patch_size):
+                    with autocast(enabled=use_amp, device_type = self.device.type):
+                        loss_patch = self.net(
+                            node_feats=self.X,
+                            edge_index=self.edge_index,
+                            count_matrix=self.Y[:, start:end],
+                            library_size=self.lY,
+                            basis=self.basis[:, start:end],
+                            alpha=self.alpha,
+                            proportion=self.proportion,
+                            gene_index=torch.arange(start, end, device=self.device),
+                            loss_mode="DECONV",
+                            n_patchs=n_patches,  
+                            test=test,
+                        )
+                    loss_sum += float(loss_patch.detach())
+                    decon_sum += float(self.net.decon_loss.detach())
+                    if hasattr(self.net, "regularization_loss") and self.net.regularization_loss is not None:
+                        reg_sum += float(self.net.regularization_loss.detach())
+                    opt.backward(loss_patch)
 
-                if test:
-                    print(torch.cuda.memory_summary())
-                torch.cuda.empty_cache()
+                with autocast(enabled=use_amp, device_type = self.device.type):
+                    feature_loss = self.net(
+                        node_feats=self.X,
+                        edge_index=self.edge_index,
+                        count_matrix=None,
+                        library_size=None,
+                        basis=None,
+                        alpha=self.alpha,
+                        proportion=self.proportion,
+                        gene_index=None,
+                        loss_mode="RECON",
+                        test=test,
+                    )
+                loss_sum += float(feature_loss.detach())
+                opt.backward(feature_loss)
+                opt.step()
 
-                if use_amp:
-                    with autocast():
-                        feature_loss = self.net(node_feats=self.X,
-                                                edge_index=self.edge_index,
-                                                count_matrix=None,
-                                                library_size=None,
-                                                basis=None,
-                                                alpha = self.alpha,
-                                                proportion = self.proportion,
-                                                gene_index=None,
-                                                loss_mode='RECON',
-                                                test=test
-                                                )
-                else:
-                    feature_loss = self.net(node_feats=self.X,
-                                            edge_index=self.edge_index,
-                                            count_matrix=None,
-                                            library_size=None,
-                                            basis=None,
-                                            alpha = self.alpha,
-                                            proportion = self.proportion,
-                                            gene_index=None,
-                                            loss_mode='RECON',
-                                            test=test
-                                            )
-                loss_sum += feature_loss.item()
-                if use_amp:
-                    scaler.scale(feature_loss).backward()
-                    scaler.step(self.optimizer)
-                    scaler.update()
-                else:
-                    feature_loss.backward()
-                    self.optimizer.step()
-
-                self.features_loss.append(self.net.features_loss.item())
-                self.regularization_loss.append(regularization_loss)
                 self.loss.append(loss_sum)
-                self.decon_loss.append(decon_loss)
+                self.decon_loss.append(decon_sum)
+                self.features_loss.append(float(self.net.features_loss.detach()))
+                self.regularization_loss.append(reg_sum)
             else:
-                loss = self.net(node_feats=self.X,
-                                edge_index=self.edge_index,
-                                count_matrix=self.Y,
-                                library_size=self.lY,
-                                basis=self.basis,
-                                alpha = self.alpha,
-                                proportion = self.proportion,
-                                gene_index=None,
-                                test=test
-                                )
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
+                opt.zero_grad()
+                with autocast(enabled=use_amp, device_type = self.device.type):
+                    loss = self.net(
+                        node_feats=self.X,
+                        edge_index=self.edge_index,
+                        count_matrix=self.Y,
+                        library_size=self.lY,
+                        basis=self.basis,
+                        alpha=self.alpha,
+                        proportion=self.proportion,
+                        gene_index=None,
+                        test=test,
+                    )
+                opt.backward(loss)
+                opt.step()
 
-                self.loss.append(loss.item())
-                self.decon_loss.append(self.net.decon_loss.item())
-                self.features_loss.append(self.net.features_loss.item())
-                self.regularization_loss.append(self.net.regularization_loss.item())
+                self.loss.append(float(loss.detach()))
+                self.decon_loss.append(float(self.net.decon_loss.detach()))
+                self.features_loss.append(float(self.net.features_loss.detach()))
+                self.regularization_loss.append(
+                    float(self.net.regularization_loss.detach()) if hasattr(self.net, "regularization_loss") and self.net.regularization_loss is not None else 0.0
+                )
 
-            if report_loss:
-                if not step % step_interval:
-                    print("Step: %s, Loss: %.4f, d_loss: %.4f, f_loss: %.4f, reg_loss: %.4f" % (step, self.loss[-1], 
-                    self.decon_loss[-1], self.features_loss[-1], self.regularization_loss[-1]))        
+            if report_loss and (step % step_interval == 0):
+                tqdm.write(
+                    f"Step: {step}, Loss: {self.loss[-1]:.4f}, d_loss: {self.decon_loss[-1]:.4f}, "
+                    f"f_loss: {self.features_loss[-1]:.4f}, reg_loss: {self.regularization_loss[-1]:.4f}"
+                )
 
     def eval(self):
         self.net.eval()
@@ -226,12 +196,18 @@ class Model():
 
         factor = self.factor.detach().cpu().numpy()
         loading = self.loading.detach().cpu().numpy()
-        for i in range(factor.shape[0]):
-            factor_df = pd.DataFrame(factor[i], index=self.adata_st.obs.index, columns=[f'factor_{j}' for j in range(factor.shape[2])])
-            self.adata_st.obsm[f'{self.celltypes[i]}'] = factor_df
-        for i in range(loading.shape[0]):
-            loading_df = pd.DataFrame(loading[i].T, index=self.adata_st.var.index, columns=[f'loading_{j}' for j in range(loading.shape[1])])
-            self.adata_st.varm[f'{self.celltypes[i]}'] = loading_df
+        if factor.shape[2] > 1:
+            for i in range(factor.shape[0]):
+                factor_df = pd.DataFrame(factor[i], index=self.adata_st.obs.index, columns=[f'factor_{j}' for j in range(factor.shape[2])])
+                self.adata_st.obsm[f'{self.celltypes[i]}'] = factor_df
+            for i in range(loading.shape[0]):
+                loading_df = pd.DataFrame(loading[i].T, index=self.adata_st.var.index, columns=[f'loading_{j}' for j in range(loading.shape[1])])
+                self.adata_st.varm[f'{self.celltypes[i]}'] = loading_df
+        else:
+            factor = factor[:, :, 0]
+            self.adata_st.obsm['factor'] = pd.DataFrame(factor.T, index=self.adata_st.obs.index, columns=self.celltypes)
+            loading = loading[:, 0, :]
+            self.adata_st.varm['loading'] = pd.DataFrame(loading.T, index=self.adata_st.var.index, columns=self.celltypes)
 
         return self.adata_st
     
@@ -296,104 +272,73 @@ class Model_deconv():
         self.lY = torch.from_numpy(np.array(adata_st.obs["library_size"].values.reshape(-1, 1))).float().to(self.device)
         self.basis = torch.from_numpy(np.array(adata_basis.X)).float().to(self.device)
 
-    def train(self, report_loss=True, step_interval=200, test= False, gene_patch=False, patch_size=200, use_amp=True):
-        if gene_patch:
-            n_patchs = int(np.ceil(self.Y.shape[1] / patch_size))
-            scaler = GradScaler()
-
-        self.net.train()      
+    def train(
+        self,
+        report_loss: bool = True,
+        step_interval: int = 200,
+        test: bool = False,
+        gene_patch: bool = False,
+        patch_size: int = 200,
+        use_amp: bool = False,
+    ):
+        self.net.train()
+        opt = OptimHelper(self.optimizer, use_amp=use_amp)
 
         for step in tqdm(range(self.training_steps)):
-            # if test:
-            #     print(torch.cuda.max_memory_allocated()/1024/1024)
-            #     print(torch.cuda.memory_allocated()/1024/1024)
-            #     print(torch.cuda.memory_reserved()/1024/1024)
             if gene_patch:
-                loss_sum = 0
-                decon_loss = 0
-                torch.cuda.empty_cache()
-                self.optimizer.zero_grad()
+                n_patches = int(np.ceil(self.Y.shape[1] / patch_size))
+                opt.zero_grad()
+                loss_sum = 0.0
+                decon_sum = 0.0
 
-                for i in range(n_patchs):
-                    if i == n_patchs - 1:
-                        start = i * patch_size
-                        end = self.Y.shape[1]
-                    else:
-                        start = i * patch_size
-                        end = (i + 1) * patch_size
-                    if use_amp:
-                        with autocast():
-                            loss = self.net(node_feats=self.X,
-                                            edge_index=self.edge_index,
-                                            count_matrix=self.Y[:, start:end],
-                                            library_size=self.lY,
-                                            basis=self.basis[:, start:end],
-                                            gene_index=torch.arange(start, end).to(self.device),
-                                            loss_mode='DECONV',
-                                            )
-                    else:
-                        loss = self.net(node_feats=self.X,
-                                        edge_index=self.edge_index,
-                                        count_matrix=self.Y[:, start:end],
-                                        library_size=self.lY,
-                                        basis=self.basis[:, start:end],
-                                        gene_index=torch.arange(start, end).to(self.device),
-                                        loss_mode='DECONV',
-                                        )
-                    loss_sum += loss.item()
-                    decon_loss += self.net.decon_loss.item()
-                    if use_amp:
-                        scaler.scale(loss).backward()
-                    else:
-                        loss.backward()
-                    #loss.backward()
-                
-                torch.cuda.empty_cache()
-                if use_amp:
-                    with autocast():
-                        feature_loss = self.net(node_feats=self.X,
-                                        edge_index=self.edge_index,
-                                        count_matrix=None,
-                                        library_size=None,
-                                        basis=None,
-                                        gene_index=None,
-                                        loss_mode='RECON'
-                                        )
-                else:
-                    feature_loss = self.net(node_feats=self.X,
-                                        edge_index=self.edge_index,
-                                        count_matrix=None,
-                                        library_size=None,
-                                        basis=None,
-                                        gene_index=None,
-                                        loss_mode='RECON'
-                                        )
-                loss_sum += feature_loss.item()
-                if test:
-                    print(torch.cuda.max_memory_allocated()/1024/1024)
-                if use_amp:
-                    scaler.scale(feature_loss).backward()
-                    scaler.step(self.optimizer)
-                    scaler.update()
-                else:
-                    feature_loss.backward()
-                    self.optimizer.step()
-                #self.optimizer.zero_grad()
+                for start, end in patches(self.Y.shape[1], patch_size):
+                    with autocast(enabled=use_amp, device_type = self.device.type):
+                        loss_patch = self.net(
+                            node_feats=self.X,
+                            edge_index=self.edge_index,
+                            count_matrix=self.Y[:, start:end],
+                            library_size=self.lY,
+                            basis=self.basis[:, start:end],
+                            gene_index=torch.arange(start, end, device=self.device),
+                            loss_mode="DECONV",
+                        )
+                    loss_sum += float(loss_patch.detach())
+                    decon_sum += float(self.net.decon_loss.detach())
+                    opt.backward(loss_patch)
+
+                # RECON 一次
+                with autocast(enabled=use_amp, device_type = self.device.type):
+                    feature_loss = self.net(
+                        node_feats=self.X,
+                        edge_index=self.edge_index,
+                        count_matrix=None,
+                        library_size=None,
+                        basis=None,
+                        gene_index=None,
+                        loss_mode="RECON",
+                    )
+                loss_sum += float(feature_loss.detach())
+                opt.backward(feature_loss)
+                opt.step()
+
             else:
-                loss_sum = self.net(node_feats=self.X,
-                                edge_index=self.edge_index,
-                                count_matrix=self.Y,
-                                library_size=self.lY,
-                                basis=self.basis,
-                                )
-                self.optimizer.zero_grad()
-                loss_sum.backward()
-                self.optimizer.step()
-                decon_loss = self.net.decon_loss.item()
+                opt.zero_grad()
+                with autocast(enabled=use_amp, device_type = self.device.type):
+                    loss_sum = self.net(
+                        node_feats=self.X,
+                        edge_index=self.edge_index,
+                        count_matrix=self.Y,
+                        library_size=self.lY,
+                        basis=self.basis,
+                    )
+                opt.backward(loss_sum)
+                opt.step()
+                decon_sum = float(self.net.decon_loss.detach())
 
-            if report_loss:
-                if not step % step_interval:
-                    print("Step: %s, Loss: %.4f, d_loss: %.4f, f_loss: %.4f" % (step, loss_sum, decon_loss, self.net.features_loss.item()))  
+            if report_loss and (step % step_interval == 0):
+                tqdm.write(
+                    f"Step: {step}, Loss: {float(loss_sum):.4f}, d_loss: {float(decon_sum):.4f}, f_loss: {float(self.net.features_loss.detach()):.4f}"
+                ) 
     
     def eval(self):
         self.net.eval()

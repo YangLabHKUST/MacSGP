@@ -6,6 +6,8 @@ import scipy.sparse
 import torch
 from torch_geometric.nn import knn_graph, radius_graph
 from torch_geometric.utils import to_undirected
+from torch.amp import autocast
+from torch.amp import GradScaler
 
 def Cal_Spatial_Net(
     adata,
@@ -215,3 +217,31 @@ def select_hvgs(adata_ref, celltype_ref_col, num_per_group=200):
     markers_df = pd.DataFrame(adata_ref.uns["ttest"]["names"]).iloc[0:num_per_group, :]
     genes = sorted(list(np.unique(markers_df.melt().value.values)))
     return genes
+
+
+class OptimHelper:
+    def __init__(self, optimizer, use_amp: bool):
+        self.optimizer = optimizer
+        self.scaler = GradScaler(enabled=use_amp)
+        self.use_amp = use_amp
+
+    def zero_grad(self):
+        self.optimizer.zero_grad(set_to_none=True)
+
+    def backward(self, loss):
+        if self.use_amp:
+            self.scaler.scale(loss).backward()
+        else:
+            loss.backward()
+
+    def step(self):
+        if self.use_amp:
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+        else:
+            self.optimizer.step()
+
+def patches(total_cols: int, size: int):
+    for s in range(0, total_cols, size):
+        e = min(s + size, total_cols)
+        yield s, e

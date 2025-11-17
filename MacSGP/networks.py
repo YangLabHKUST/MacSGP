@@ -99,16 +99,16 @@ class SGPNet(nn.Module):
         super().__init__()
         # define layers
         # encoder layers
-        self.encoder_layer1 = GCNII(hidden_dims[0],n_layers,hidden_dims[1],alpha_gcn,theta_gcn)
+        self.encoder_layer1 = GCNII(hidden_dims[0],hidden_dims[1],n_layers,alpha_gcn,theta_gcn)
         self.encoder_layer2 = DenseLayer(hidden_dims[1], hidden_dims[2])
 
         # decoder layers
-        self.decoder_layer1 = GCNII(hidden_dims[2],n_layers,hidden_dims[1],alpha_gcn,theta_gcn)
+        self.decoder_layer1 = GCNII(hidden_dims[2],hidden_dims[1],n_layers,alpha_gcn,theta_gcn)
         self.decoder_layer2 = DenseLayer(hidden_dims[1], hidden_dims[0])
 
         # SGP layers
         #self.SGP_layer = DenseLayer(hidden_dims[2], n_celltypes, zero_init=True)
-        self.factor_layers = nn.ModuleList(
+        self.deconv_factor_layers = nn.ModuleList(
             [DenseLayer(hidden_dims[2], n_SGPs, zero_init=True) for _ in range(n_celltypes)]
         )
         self.loading = nn.Parameter(torch.randn(n_celltypes, n_SGPs, hidden_dims[0]) * 1e-3)
@@ -127,7 +127,7 @@ class SGPNet(nn.Module):
         if estimate_gamma_k:
             self.gamma_k = nn.Parameter(torch.zeros(n_celltypes, hidden_dims[0]))
 
-        self.coef_fe = coef_fe
+        self.coef_fe = coef_fe * 9.25
         self.coef_reg = coef_reg
         self.n_SGPs = n_SGPs
 
@@ -239,11 +239,11 @@ class DeconvNet(nn.Module):
         super().__init__()
         # define layers
         # encoder layers
-        self.encoder_layer1 = GCNII(hidden_dims[0],n_layers,hidden_dims[1],alpha_gcn,theta_gcn)
+        self.encoder_layer1 = GCNII(hidden_dims[0],hidden_dims[1],n_layers,alpha_gcn,theta_gcn)
         self.encoder_layer2 = DenseLayer(hidden_dims[1], hidden_dims[2])
 
         # decoder layers
-        self.decoder_layer1 = GCNII(hidden_dims[2],n_layers,hidden_dims[1],alpha_gcn,theta_gcn)
+        self.decoder_layer1 = GCNII(hidden_dims[2],hidden_dims[1],n_layers,alpha_gcn,theta_gcn)
         self.decoder_layer2 = DenseLayer(hidden_dims[1], hidden_dims[0])
         # deconvolution layers
         self.deconv_alpha_layer = DenseLayer(hidden_dims[2], 1, zero_init=True)

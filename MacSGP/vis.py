@@ -9,7 +9,7 @@ import os
 from matplotlib import cm
 from matplotlib import colors
 
-def SGPplot(adata, celltype_plot=None, title = 'Plot', show_title=True,
+def plot_spatial_ct(adata, celltype_plot=None, title = None, show_title=True,
                 index='factor', reverse = False,
                 proportion_threshold=0., num_threshold=100, 
                 cmap='bwr', vmin=None, vmax=None, crop_coords=None,
@@ -17,7 +17,7 @@ def SGPplot(adata, celltype_plot=None, title = 'Plot', show_title=True,
                 return_ax=False, save_path=None, frameon=False
                 ):
 
-    celltype = adata.obsm[index].columns
+    celltype = adata.obsm['proportion'].columns
     if celltype_plot is None:
         celltype_plot = celltype
         celltype_plot = list(celltype_plot)
@@ -34,6 +34,9 @@ def SGPplot(adata, celltype_plot=None, title = 'Plot', show_title=True,
     
     adata_tmp = adata.copy()
     factor = adata_tmp.obsm[index].copy()
+
+    if title is None:
+        title = index
 
     if len(celltype_plot) == 0:
         print("No cell types to plot after filtering.")
@@ -56,7 +59,7 @@ def SGPplot(adata, celltype_plot=None, title = 'Plot', show_title=True,
             cmap=cmap,
             na_color=None,
             spot_size=spot_size,
-            colorbar_loc=colorbar_loc,  # 禁用每个图的 colorbar
+            colorbar_loc=colorbar_loc,  
             alpha_img=alpha_img,
             vcenter=0 if index == 'factor' else None,
             vmin=vmin,
@@ -64,7 +67,7 @@ def SGPplot(adata, celltype_plot=None, title = 'Plot', show_title=True,
             title=f'{title} of {ct}' if show_title else '',
             frameon=frameon,
             crop_coord=crop_coords,
-            ax=axes,  # 指定当前 ax
+            ax=axes, 
             show=False,  
             img_key=None if hide_image else 'hires'
         )
