@@ -1,9 +1,5 @@
 # MacSGP: Mapping Cell-Type-Specific Spatial Gene Programs Uncovers Tissue Architecture and Microenvironment Organization
 
-## Introduction
-
-`MacSGP` is a scalable statistical and computational approach for MApping Cell-type-specific Spatial Gene Programs (SGPs) in spatial transcriptomic (ST) data.
-
 <!-- badges: start -->
 
 ![GitHub repo
@@ -14,8 +10,15 @@ commit](https://img.shields.io/github/last-commit/YangLabHKUST/MacSGP)
 License](https://img.shields.io/github/license/YangLabHKUST/MacSGP)
 [![HitCount](https://hits.dwyl.com/ YangLabHKUST/MacSGP.svg?style=flat-square)](http://hits.dwyl.com/ YangLabHKUST/MacSGP)
 ![GitHub Repo
-stars](https://img.shields.io/github/stars/YangLabHKUST/MacSGP) ![GitHub
+stars](https://img.shields.io/github/stars/YangLabHKUST/MacSGP)
+![GitHub
 forks](https://img.shields.io/github/forks/YangLabHKUST/MacSGP)
+
+<!-- badges: end -->
+
+## Introduction
+
+`MacSGP` is a scalable statistical and computational approach for MApping Cell-type-specific Spatial Gene Programs (SGPs) in spatial transcriptomic (ST) data.
 
 <figure>
 
