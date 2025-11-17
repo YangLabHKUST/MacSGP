@@ -6,7 +6,7 @@
 
 <figure>
 
-<img src="figures/pipeline.png" style="width:95.0%"
+<img src="figures/overview.png" style="width:95.0%"
 alt="Overview" />
 </figure>
 
