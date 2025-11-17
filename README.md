@@ -4,6 +4,19 @@
 
 `MacSGP` is a scalable statistical and computational approach for MApping Cell-type-specific Spatial Gene Programs (SGPs) in spatial transcriptomic (ST) data.
 
+<!-- badges: start -->
+
+![GitHub repo
+size](https://img.shields.io/github/repo-size/YangLabHKUST/MacSGP)
+![GitHub last
+commit](https://img.shields.io/github/last-commit/YangLabHKUST/MacSGP)
+![GitHub
+License](https://img.shields.io/github/license/YangLabHKUST/MacSGP)
+[![HitCount](https://hits.dwyl.com/ YangLabHKUST/MacSGP.svg?style=flat-square)](http://hits.dwyl.com/ YangLabHKUST/MacSGP)
+![GitHub Repo
+stars](https://img.shields.io/github/stars/YangLabHKUST/MacSGP) ![GitHub
+forks](https://img.shields.io/github/forks/YangLabHKUST/MacSGP)
+
 <figure>
 
 <img src="figures/overview.png" style="width:95.0%"
