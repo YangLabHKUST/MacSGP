@@ -8,6 +8,7 @@ size](https://img.shields.io/github/repo-size/YangLabHKUST/MacSGP)
 commit](https://img.shields.io/github/last-commit/YangLabHKUST/MacSGP)
 ![GitHub
 License](https://img.shields.io/github/license/YangLabHKUST/MacSGP)
+![HitCount](https://hits.dwyl.com/YangLabHKUST/MacSGP.svg?style=flat-square)(http://hits.dwyl.com/YangLabHKUST/MacSGP)
 ![GitHub Repo
 stars](https://img.shields.io/github/stars/YangLabHKUST/MacSGP)
 ![GitHub
