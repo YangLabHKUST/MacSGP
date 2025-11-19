@@ -127,8 +127,8 @@ class SGPNet(nn.Module):
         if estimate_gamma_k:
             self.gamma_k = nn.Parameter(torch.zeros(n_celltypes, hidden_dims[0]))
 
-        self.coef_fe = coef_fe * 9.25
-        self.coef_reg = coef_reg
+        self.coef_fe = coef_fe
+        self.coef_reg = coef_reg * 9.25
         self.n_SGPs = n_SGPs
 
     def forward(self, 
