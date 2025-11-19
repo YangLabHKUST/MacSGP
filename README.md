@@ -42,7 +42,7 @@ The code for reproducing the real data analysis results presented in our paper a
 
 If you find `MacSGP` or any of the source code in this repository useful for your work, please cite:
 > Mapping Cell-Type-Specific Spatial Gene Programs Uncovers Tissue Architecture and Microenvironment Organization.  
-> Yeqin Zeng, Zhiwei Wang, Yuyao Liu, Yuheng Chen, Jiguang Wang, Hao Chen and Can Yang.  
+> Yeqin Zeng, Zhiwei Wang, Yuyao Liu, Yuheng Chen, Jiguang Wang, Hao Chen, and Can Yang.  
 > Submitted, 2025.
 
 ## Development
