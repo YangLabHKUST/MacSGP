@@ -1,7 +1,7 @@
 # MacSGP: Mapping Cell-Type-Specific Spatial Gene Programs Uncovers Tissue Architecture and Microenvironment Organization
 
 <!-- badges: start -->
-
+[![pypi](https://img.shields.io/pypi/v/MacSGP.svg)](https://pypi.python.org/pypi/MacSGP/)
 ![GitHub repo
 size](https://img.shields.io/github/repo-size/YangLabHKUST/MacSGP)
 ![GitHub last
