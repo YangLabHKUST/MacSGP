@@ -47,8 +47,10 @@ Alternatively, MacSGP can be downloaded from GitHub:
 # Clone the repository
 $ git clone https://github.com/YangLabHKUST/MacSGP.git
 $ cd MacSGP
+
 # Install the required packages
-pip install -r requirements.txt
+$ pip install -r requirements.txt
+
 # Install MacSGP
 $ python setup.py build
 $ python setup.py install
