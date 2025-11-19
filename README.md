@@ -37,7 +37,7 @@ $ conda activate MacSGP
 ### Requirements
 MacSGP requires `pytorch` and `PyG` 
 
-[Install Pytorch](https://pytorch.org/get-started/locally/) [Install PyG](https://www.dgl.ai/pages/start.html)
+[Install Pytorch](https://pytorch.org/get-started/locally/) [Install PyG](https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html)
 
 For `PyG`, MacSGP also requires its additional libraries, their installation requires specifications for torch version and CUDA version. Users could use `nvcc --version` to check the CUDA version for installation.
 
