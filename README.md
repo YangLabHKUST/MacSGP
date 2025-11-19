@@ -26,6 +26,34 @@ forks](https://img.shields.io/github/forks/YangLabHKUST/MacSGP)
 alt="Overview" />
 </figure>
 
+## Installation
+It's recommended to create a virtual environment first.
+
+```shell
+$ conda create -n MacSGP python=3.11
+$ conda activate MacSGP
+```
+
+### Installation through PyPI
+MacSGP can be installed from PyPI:
+
+```shell
+$ pip install MacSGP
+```
+
+### Installation through GitHub
+Alternatively, MacSGP can be downloaded from GitHub:
+```shell
+# Clone the repository
+$ git clone https://github.com/YangLabHKUST/MacSGP.git
+$ cd MacSGP
+# Install the required packages
+pip install -r requirements.txt
+# Install MacSGP
+$ python setup.py build
+$ python setup.py install
+```
+
 ## Real data analysis
 
 The code for reproducing the real data analysis results presented in our paper are available on the tutorial website
