@@ -18,7 +18,13 @@ forks](https://img.shields.io/github/forks/YangLabHKUST/MacSGP)
 
 ## Introduction
 
-`MacSGP` is a scalable statistical and computational approach for MApping Cell-type-specific Spatial Gene Programs (SGPs) in spatial transcriptomic (ST) data.
+**MacSGP** is a scalable statistical and computational approach for MApping Cell-type-specific Spatial Gene Programs (SGPs) in spatial transcriptomic (ST) data.
+
+MacSGP's effectiveness relies on our innovations in the seamless integration of deep graph neural networks (GNNs) and probabilistic models:
+
+- MacSGP maps gene expressions and spatial information of spots into a shared latent space by leveraging deep GNNs, yielding low-dimensional representations of each spot that capture both gene expression similarity and spatial coherence.
+- MacSGP utilizes the latent representation to generate cell-type-specific SGPs through a probabilistic model, which accounts for cell type mixtures and characterizes cell-type-specific SGPs using the low-rank structure.
+- For large-scale high-resolution ST datasets, MacSGP adopts a batch-learning scheme that learns SGPs over small gene patches, enabling scalable training without sacrificing accuracy. 
 
 <figure>
 
