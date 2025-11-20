@@ -2,6 +2,7 @@
 
 <!-- badges: start -->
 [![pypi](https://img.shields.io/pypi/v/MacSGP.svg)](https://pypi.python.org/pypi/MacSGP/)
+![Downloads](https://pepy.tech/project/MacSGP)
 ![GitHub repo
 size](https://img.shields.io/github/repo-size/YangLabHKUST/MacSGP)
 ![GitHub last
