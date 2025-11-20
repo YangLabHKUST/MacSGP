@@ -2,7 +2,7 @@
 
 <!-- badges: start -->
 [![pypi](https://img.shields.io/pypi/v/MacSGP.svg)](https://pypi.python.org/pypi/MacSGP/)
-![Downloads](https://pepy.tech/project/MacSGP)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/macsgp?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/macsgp)
 ![GitHub repo
 size](https://img.shields.io/github/repo-size/YangLabHKUST/MacSGP)
 ![GitHub last
