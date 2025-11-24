@@ -79,11 +79,13 @@ $ python setup.py build
 $ python setup.py install
 ```
 
-## Real data analysis
+## Tutorials and reproducibility
 
-The code for reproducing the real data analysis results presented in our paper are available on the tutorial website
+The tutorials for using MacSGP and codes for reproducing the simulation and real data analysis results presented in our paper are available on the tutorial website
 (<https://macsgp-tutorial.readthedocs.io/>).
 
+- [Simulation study
+  replicates](https://macsgp-tutorial.readthedocs.io/en/latest/analysis/simulation/)
 - [Visium adult mouse brain datasets containing two biological
   replicates](https://macsgp-tutorial.readthedocs.io/en/latest/analysis/mouse_brain/)
 - [Visium kidney cancer dataset at the tumour-normal
